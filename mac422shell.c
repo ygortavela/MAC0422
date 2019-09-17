@@ -96,12 +96,12 @@ main( int argc, char *argv[], char *envp[])
     char **command;
     pid_t process_pid;
     pid_t wait_response;
-    int stat_loc, commandCode, i;
+    int stat_loc, commandCode;
 
     while (TRUE) {
         input = read_command();
 
-        if (input == NULL || strlen(input) == 0) {
+        if (input == NULL) {
             free( input);
 
             continue;
