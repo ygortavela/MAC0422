@@ -45,7 +45,7 @@ protegepracaramba( char *argv[])
 {
     int status;
 
-    status = chmod( argv[1], 0000);
+    status = chmod( argv[0], 0000);
 
     _exit( status);
 }
@@ -55,7 +55,7 @@ liberageral( char *argv[])
 {
     int status;
 
-    status = chmod( argv[1], 0777);
+    status = chmod( argv[0], 0777);
 
     _exit( status);
 }
@@ -64,9 +64,6 @@ void
 rodeveja( char *argv[], char *envp[])
 {
     int status;
-
-    argv[0] = argv[1];
-    argv[1] = '\0';
 
     status = execve( argv[0], argv, envp);
 
@@ -77,9 +74,6 @@ void
 rode( char *argv[], char *envp[])
 {
     int status, fd;
-
-    argv[0] = argv[1];
-    argv[1] = '\0';
 
     signal( SIGINT, SIG_IGN);
     signal( SIGQUIT, SIG_IGN);
@@ -96,7 +90,7 @@ main( int argc, char *argv[], char *envp[])
     char **command;
     pid_t process_pid;
     pid_t wait_response;
-    int stat_loc, commandCode;
+    int stat_loc, commandCode, i;
 
     while (TRUE) {
         input = read_command();
@@ -128,6 +122,11 @@ main( int argc, char *argv[], char *envp[])
 
             continue;
         }
+
+        for (i = 1; command[i] != NULL; i++)
+            command[i - 1] = command[i];
+
+        command[i] = NULL;
 
         process_pid = fork();
 
