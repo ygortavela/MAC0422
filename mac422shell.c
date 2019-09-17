@@ -8,7 +8,7 @@
 #include <string.h>
 
 #define TRUE 1
-#define BUFFER 64
+#define BUFFER 128
 
 char *
 read_command( void)
@@ -41,97 +41,107 @@ parse_command( char *input)
 void
 protegepracaramba( char *argv[])
 {
-    chmod( argv[1], 0000);
+    int status;
+
+    status = chmod( argv[1], 0000);
+
+    _exit( status);
 }
 
 void
 liberageral( char *argv[])
 {
-    chmod( argv[1], 0777);
+    int status;
+
+    status = chmod( argv[1], 0777);
+
+    _exit( status);
 }
 
-int
+void
 rodeveja( char *argv[], char *envp[])
 {
-    pid_t process_pid;
-    pid_t wait_response;
-    int stat_loc, status;
-    
+    int status;
+
     argv[0] = argv[1];
     argv[1] = '\0';
-    process_pid = fork();
 
-    if (process_pid == -1) {
-        perror( "fork() failed!");
-        _exit( 1);
-    } else if (process_pid == 0) {
-        status = execve( argv[0], argv, envp);
-        _exit( status);
-    } else {
-        wait_response = waitpid( process_pid, &stat_loc, WUNTRACED);
-        printf( "=> programa '%s' retornou com codigo %d.\n", argv[0], stat_loc);
-    }
+    status = execve( argv[0], argv, envp);
 
-    return 0;
+    _exit( status);
 }
 
-int
+void
 rode( char *argv[], char *envp[])
 {
-    pid_t process_pid;
     int status, fd;
 
     argv[0] = argv[1];
     argv[1] = '\0';
-    process_pid = fork();
 
-    if (process_pid == -1) {
-        perror( "fork() failed!");
-        _exit( 1);
-    } else if (process_pid == 0) {
-	setsid();
-	chdir( "/");
-	close( STDIN_FILENO);
-	close( STDOUT_FILENO);
-	close( STDERR_FILENO);
-	fd = open( "/dev/null", O_RDWR);
-	dup( fd);
-	dup( fd);
-        status = execve( argv[0], argv, envp);
-        _exit( status);
-    } else {
-        signal( SIGCHLD, SIG_IGN);
-    }
+    signal( SIGINT, SIG_IGN);
+    signal( SIGQUIT, SIG_IGN);
+    close( STDIN_FILENO);
+    close( STDOUT_FILENO);
+    close( STDERR_FILENO);
+    fd = open( "/dev/null", O_RDWR);
+    dup( fd);
+    dup( fd);
 
-    return 0;
+    status = execve( argv[0], argv, envp);
+    _exit( status);
 }
 
-int 
+int
 main( int argc, char *argv[], char *envp[])
 {
     char *input;
     char **command;
     pid_t process_pid;
-    int s;
+    pid_t wait_response;
+    int stat_loc, commandCode;
 
     while (TRUE) {
         input = read_command();
         command = parse_command( input);
 
-	if (!strcmp( command[0], "exit")) {
+        if (!strcmp( command[0], "exit")) {
             free( input);
             free( command);
             _exit(0);
         } else if (!strcmp( command[0], "protegepracaramba")) {
-            protegepracaramba( command); 
+            commandCode = 0;
         } else if (!strcmp( command[0], "liberageral")) {
-            liberageral( command); 
+            commandCode = 1;
         } else if (!strcmp( command[0], "rodeveja")) {
-            rodeveja( command, envp); 
+            commandCode = 2;
         } else if (!strcmp( command[0], "rode")) {
-            s = rode( command, envp); 
+            commandCode = 3;
         } else {
             printf( "command not found: %s\n", command[0]);
+            free( input);
+            free( command);
+
+            break;
+        }
+
+        process_pid = fork();
+
+        if (process_pid == -1) {
+            perror( "fork() failed!");
+            _exit( 1);
+        } else if (process_pid == 0) {
+            if (commandCode == 0) protegepracaramba( command);
+            else if (commandCode == 1) liberageral( command);
+            else if (commandCode == 2) rodeveja( command, envp);
+            else if (commandCode == 3) rode( command, envp);
+        } else {
+            if (commandCode == 2) {
+                wait_response = waitpid( process_pid, &stat_loc, WUNTRACED);
+                printf( "=> programa '%s' retornou com codigo %d.\n", argv[0], stat_loc);
+            } else if (commandCode == 3) {
+                signal( SIGCHLD, SIG_IGN);
+            }
         }
 
         free( input);
