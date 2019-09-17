@@ -8,15 +8,16 @@
 #include <string.h>
 
 #define TRUE 1
-#define BUFFER 128
+#define BUFFER 64
 
 char *
 read_command( void)
 {
-    char *input = malloc( BUFFER * sizeof (char));
+    char *input;
 
     printf( "> ");
-    scanf( "%[^\n]%*c", input);
+    input = fgets( input, BUFFER, stdin);
+    input = strtok( input, "\n");
 
     return input;
 }
@@ -24,16 +25,18 @@ read_command( void)
 char **
 parse_command( char *input)
 {
-    char **commmand = malloc( strlen( input) * sizeof (char *));
+    char **commmand = malloc( strlen(input) * sizeof (char *));
     char *parsed = strtok( input, " ");
     int index = 0;
 
     while (parsed != NULL) {
+        printf("%s\n", parsed);
         commmand[index++] = parsed;
         parsed = strtok( NULL, " ");
     }
 
     commmand[index] = NULL;
+    free( parsed);
 
     return commmand;
 }
@@ -82,11 +85,6 @@ rode( char *argv[], char *envp[])
     signal( SIGINT, SIG_IGN);
     signal( SIGQUIT, SIG_IGN);
     close( STDIN_FILENO);
-    close( STDOUT_FILENO);
-    close( STDERR_FILENO);
-    fd = open( "/dev/null", O_RDWR);
-    dup( fd);
-    dup( fd);
 
     status = execve( argv[0], argv, envp);
     _exit( status);
@@ -103,6 +101,13 @@ main( int argc, char *argv[], char *envp[])
 
     while (TRUE) {
         input = read_command();
+
+        if (strlen(input) == 0) {
+            free( input);
+
+            continue;
+        }
+
         command = parse_command( input);
 
         if (!strcmp( command[0], "exit")) {
@@ -122,7 +127,7 @@ main( int argc, char *argv[], char *envp[])
             free( input);
             free( command);
 
-            break;
+            continue;
         }
 
         process_pid = fork();
@@ -142,10 +147,10 @@ main( int argc, char *argv[], char *envp[])
             } else if (commandCode == 3) {
                 signal( SIGCHLD, SIG_IGN);
             }
-        }
 
-        free( input);
-        free( command);
+            free( input);
+            free( command);
+        }
     }
 
     return 0;
