@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -49,70 +50,86 @@ liberageral( char *argv[])
     chmod( argv[1], 0777);
 }
 
-void
-rodeveja( char *argv[])
+int
+rodeveja( char *argv[], char *envp[])
 {
     pid_t process_pid;
     pid_t wait_response;
-    int stat_loc;
+    int stat_loc, status;
     
+    argv[0] = argv[1];
+    argv[1] = '\0';
     process_pid = fork();
 
     if (process_pid == -1) {
-        perror("fork() failed!");
-        _exit(1);
+        perror( "fork() failed!");
+        _exit( 1);
     } else if (process_pid == 0) {
-        execve( argv[1], NULL, NULL);
+        status = execve( argv[0], argv, envp);
+        _exit( status);
     } else {
         wait_response = waitpid( process_pid, &stat_loc, WUNTRACED);
-        printf("=> programa '%s' retornou com codigo %d.\n", argv[1], stat_loc);
+        printf( "=> programa '%s' retornou com codigo %d.\n", argv[0], stat_loc);
     }
+
+    return 0;
 }
 
-void
-rode( char *argv[])
+int
+rode( char *argv[], char *envp[])
 {
     pid_t process_pid;
+    int status, fd;
 
+    argv[0] = argv[1];
+    argv[1] = '\0';
     process_pid = fork();
 
     if (process_pid == -1) {
-        perror("fork() failed!");
-        _exit(1);
+        perror( "fork() failed!");
+        _exit( 1);
     } else if (process_pid == 0) {
-        setsid();
-        execve( argv[1], NULL, NULL);
+	setsid();
+	chdir( "/");
+	close( STDIN_FILENO);
+	close( STDOUT_FILENO);
+	close( STDERR_FILENO);
+	fd = open( "/dev/null", O_RDWR);
+	dup( fd);
+	dup( fd);
+        status = execve( argv[0], argv, envp);
+        _exit( status);
     } else {
         signal( SIGCHLD, SIG_IGN);
     }
+
+    return 0;
 }
 
 int 
-main( int argc, char const *argv[])
+main( int argc, char *argv[], char *envp[])
 {
     char *input;
     char **command;
     pid_t process_pid;
-    pid_t wait_response;
-    int stat_loc;
+    int s;
 
     while (TRUE) {
         input = read_command();
         command = parse_command( input);
 
-        if (!strcmp( command[0], "exit")) {
+	if (!strcmp( command[0], "exit")) {
             free( input);
             free( command);
-
-            break;
+            _exit(0);
         } else if (!strcmp( command[0], "protegepracaramba")) {
             protegepracaramba( command); 
         } else if (!strcmp( command[0], "liberageral")) {
             liberageral( command); 
         } else if (!strcmp( command[0], "rodeveja")) {
-            rodeveja( command); 
+            rodeveja( command, envp); 
         } else if (!strcmp( command[0], "rode")) {
-            rode( command); 
+            s = rode( command, envp); 
         } else {
             printf( "command not found: %s\n", command[0]);
         }
