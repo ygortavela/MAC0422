@@ -123,10 +123,8 @@ main( int argc, char *argv[], char *envp[])
             continue;
         }
 
-        for (i = 1; command[i] != NULL; i++)
-            command[i - 1] = command[i];
-
-        command[i] = NULL;
+        for (i = 0; command[i] != NULL; i++)
+            command[i] = command[i + 1];
 
         process_pid = fork();
 
