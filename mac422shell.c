@@ -13,7 +13,7 @@
 char *
 read_command( void)
 {
-    char *input;
+    char *input = malloc( BUFFER * sizeof (char));
 
     printf( "> ");
     input = fgets( input, BUFFER, stdin);
@@ -30,7 +30,6 @@ parse_command( char *input)
     int index = 0;
 
     while (parsed != NULL) {
-        printf("%s\n", parsed);
         commmand[index++] = parsed;
         parsed = strtok( NULL, " ");
     }
@@ -97,12 +96,12 @@ main( int argc, char *argv[], char *envp[])
     char **command;
     pid_t process_pid;
     pid_t wait_response;
-    int stat_loc, commandCode;
+    int stat_loc, commandCode, i;
 
     while (TRUE) {
         input = read_command();
 
-        if (strlen(input) == 0) {
+        if (input == NULL || strlen(input) == 0) {
             free( input);
 
             continue;
