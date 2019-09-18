@@ -138,8 +138,10 @@ main( int argc, char *argv[], char *envp[])
             else if (commandCode == 3) rode( command, envp);
         } else {
             if (commandCode == 2) {
-                wait_response = waitpid( process_pid, &stat_loc, WUNTRACED);
-                printf( "=> programa '%s' retornou com codigo %d.\n", argv[0], stat_loc);
+                wait_response = waitpid( process_pid, &stat_loc,
+                                         WUNTRACED);
+                printf( "=> programa '%s' retornou com codigo %d.\n",
+                        argv[0], stat_loc);
             } else if (commandCode == 3) {
                 signal( SIGCHLD, SIG_IGN);
             }
