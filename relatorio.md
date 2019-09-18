@@ -5,7 +5,7 @@
 
 ## 1. Shell
 
-Consiste naturalmente em um loop infinito, em que, é aguardado o comandos do usuário. Para ler uma linha de comando, foi criada uma função chamada ***read_command***, usando a função fgets. Com a string de input do usuário em mãos, é realizado uma conversão deste input para uma array de array de chars, usando a função ***parse_command***, cujo resultado será usado pelas chamadas de sistema realizadas durante a execução dos comandos.
+Consiste naturalmente em um loop infinito, em que, é aguardado comandos do usuário. Para ler uma linha de comando, foi criada uma função chamada ***read_command***, usando a função fgets. Com a string de input do usuário em mãos, é realizado uma conversão deste input para uma array de array de chars, usando a função ***parse_command***, cujo resultado será usado pelas chamadas de sistema realizadas durante a execução dos comandos.
 
 Quando concluído este pré-processamento, é verificado se o comando dado está definido no programa (“protegepracaramba”, “liberageral”, “rodeveja” e “rode”) para então executar sua função correspondente e realizar as tarefas necessárias e, caso não esteja definido, o programa retorna uma mensagem de erro. Em todos os comandos, é usado uma chamada de sistema ***fork***, para executá-los como processos filhos do shell. Além disso, todos os comandos fazem uso da chamada ***_exit*** para finalizar o processo. Abaixo, descrevemos o funcionamento de cada comando.
 
@@ -25,7 +25,7 @@ Nesse comando é usado a chamada de sistema ***execve***, no qual é passado por
 
 ### 2.4 rode
 
-Esse comando é análogo ao 2.2, porém ele é executado em background. Para isso, é necessário fazer com que os sinais SIGINT e SIGQUIT sejam ignorados, para isto, fizemos uso da chamada ***signal***. Também é preciso fechar a entrada padrão (a shell monopoliza o teclado), usando a chamada de sistema ***close***.
+Esse comando é análogo ao 2.3, porém ele é executado em background. Sendo assim, é necessário fazer com que os sinais **SIGINT** e **SIGQUIT** sejam ignorados no processo filho e que o processo pai ignore o sinal **SIGCHLD**, para isto, fizemos uso da chamada ***signal***. Também é preciso fechar a entrada padrão (a shell monopoliza o teclado), usando a chamada de sistema ***close***.
 
 ### 2.5 exit
 
