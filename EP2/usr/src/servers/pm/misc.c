@@ -435,10 +435,19 @@ int ep;
 PUBLIC int do_batch(proc_id)
 pid_t proc_id;
 {
-  pid_t calling_pid = getpid();
-  /* sys_nice(proc_id, BATCH_Q);*/
+  pid_t calling_pid;
+  int proc_nr, proc_pnr;
 
-  printf("%d %d\n", calling_pid, m_in.pid);
+  calling_pid = getpid(); /* get caller pid */
+  proc_nr = proc_from_pid(proc_id);
+
+  if (proc_nr != -1) {
+    proc_pnr = mproc[proc_nr].mp_parent; /* index of parent process at process table */
+
+    if (calling_pid == mproc[proc_nr].mp_pid)
+      sys_nice(proc_id, BATCH_Q); /* insert process with pid proc_id into user batch priority queue */
+
+  }
 
   return(OK);
 }
@@ -449,6 +458,19 @@ pid_t proc_id;
 PUBLIC int do_unbatch(proc_id)
 pid_t proc_id;
 {
+  pid_t calling_pid;
+  int proc_nr, proc_pnr;
+
+  calling_pid = getpid(); /* get caller pid */
+  proc_nr = proc_from_pid(proc_id);
+
+  if (proc_nr != -1) {
+    proc_pnr = mproc[proc_nr].mp_parent; /* index of parent process at process table */
+
+    if (calling_pid == mproc[proc_nr].mp_pid)
+      sys_nice(proc_id, USER_Q); /* insert process with pid proc_id into user highest priorty queue */
+  }
+
   return(OK);
 }
 

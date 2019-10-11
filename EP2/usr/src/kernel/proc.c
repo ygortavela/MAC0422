@@ -8,7 +8,7 @@
  *
  *   lock_notify:     notify a process of a system event
  *   lock_send:	      send a message to a process
- *   lock_enqueue:    put a process on one of the scheduling queues 
+ *   lock_enqueue:    put a process on one of the scheduling queues
  *   lock_dequeue:    remove a process from the scheduling queues
  *
  * Changes:
@@ -20,19 +20,19 @@
  *
  * The code here is critical to make everything work and is important for the
  * overall performance of the system. A large fraction of the code deals with
- * list manipulation. To make this both easy to understand and fast to execute 
+ * list manipulation. To make this both easy to understand and fast to execute
  * pointer pointers are used throughout the code. Pointer pointers prevent
- * exceptions for the head or tail of a linked list. 
+ * exceptions for the head or tail of a linked list.
  *
  *  node_t *queue, *new_node;	// assume these as global variables
- *  node_t **xpp = &queue; 	// get pointer pointer to head of queue 
+ *  node_t **xpp = &queue; 	// get pointer pointer to head of queue
  *  while (*xpp != NULL) 	// find last pointer of the linked list
- *      xpp = &(*xpp)->next;	// get pointer to next pointer 
- *  *xpp = new_node;		// now replace the end (the NULL pointer) 
+ *      xpp = &(*xpp)->next;	// get pointer to next pointer
+ *  *xpp = new_node;		// now replace the end (the NULL pointer)
  *  new_node->next = NULL;	// and mark the new end of the list
- * 
- * For example, when adding a new node to the end of the list, one normally 
- * makes an exception for an empty list and looks up the end of the list for 
+ *
+ * For example, when adding a new node to the end of the list, one normally
+ * makes an exception for an empty list and looks up the end of the list for
  * nonempty lists. As shown above, this is not required with pointer pointers.
  */
 
@@ -44,9 +44,9 @@
 #include "proc.h"
 #include <signal.h>
 
-/* Scheduling and message passing functions. The functions are available to 
- * other parts of the kernel through lock_...(). The lock temporarily disables 
- * interrupts to prevent race conditions. 
+/* Scheduling and message passing functions. The functions are available to
+ * other parts of the kernel through lock_...(). The lock temporarily disables
+ * interrupts to prevent race conditions.
  */
 FORWARD _PROTOTYPE( int mini_send, (struct proc *caller_ptr, int dst_e,
 		message *m_ptr, unsigned flags));
@@ -84,12 +84,12 @@ FORWARD _PROTOTYPE( void pick_proc, (void));
 
 #if (CHIP == M68000)
 /* M68000 does not have cp_mess() in assembly like INTEL. Declare prototype
- * for cp_mess() here and define the function below. Also define CopyMess. 
+ * for cp_mess() here and define the function below. Also define CopyMess.
  */
 #endif /* (CHIP == M68000) */
 
 /*===========================================================================*
- *				sys_call				     * 
+ *				sys_call				     *
  *===========================================================================*/
 PUBLIC int sys_call(call_nr, src_dst_e, m_ptr, bit_map)
 int call_nr;			/* system call number and flags */
@@ -117,42 +117,42 @@ long bit_map;			/* notification event set or flags */
 	return EINVAL;
   }
 #endif
-  
+
   /* Require a valid source and/ or destination process, unless echoing. */
   if (src_dst_e != ANY && function != ECHO) {
       if(!isokendpt(src_dst_e, &src_dst)) {
 #if DEBUG_ENABLE_IPC_WARNINGS
-          kprintf("sys_call: trap %d by %d with bad endpoint %d\n", 
+          kprintf("sys_call: trap %d by %d with bad endpoint %d\n",
               function, proc_nr(caller_ptr), src_dst_e);
 #endif
 	  return EDEADSRCDST;
       }
   } else src_dst = src_dst_e;
 
-  /* Check if the process has privileges for the requested call. Calls to the 
-   * kernel may only be SENDREC, because tasks always reply and may not block 
-   * if the caller doesn't do receive(). 
+  /* Check if the process has privileges for the requested call. Calls to the
+   * kernel may only be SENDREC, because tasks always reply and may not block
+   * if the caller doesn't do receive().
    */
-  if (! (priv(caller_ptr)->s_trap_mask & (1 << function)) || 
+  if (! (priv(caller_ptr)->s_trap_mask & (1 << function)) ||
           (iskerneln(src_dst) && function != SENDREC
            && function != RECEIVE)) {
 #if DEBUG_ENABLE_IPC_WARNINGS
-      kprintf("sys_call: trap %d not allowed, caller %d, src_dst %d\n", 
+      kprintf("sys_call: trap %d not allowed, caller %d, src_dst %d\n",
           function, proc_nr(caller_ptr), src_dst);
 #endif
       return(ETRAPDENIED);		/* trap denied by mask or kernel */
   }
 
-  /* If the call involves a message buffer, i.e., for SEND, RECEIVE, SENDREC, 
-   * or ECHO, check the message pointer. This check allows a message to be 
-   * anywhere in data or stack or gap. It will have to be made more elaborate 
-   * for machines which don't have the gap mapped. 
+  /* If the call involves a message buffer, i.e., for SEND, RECEIVE, SENDREC,
+   * or ECHO, check the message pointer. This check allows a message to be
+   * anywhere in data or stack or gap. It will have to be made more elaborate
+   * for machines which don't have the gap mapped.
    */
   if (function & CHECK_PTR) {
-      vlo = (vir_bytes) m_ptr >> CLICK_SHIFT;		
+      vlo = (vir_bytes) m_ptr >> CLICK_SHIFT;
       vhi = ((vir_bytes) m_ptr + MESS_SIZE - 1) >> CLICK_SHIFT;
       if (vlo < caller_ptr->p_memmap[D].mem_vir || vlo > vhi ||
-              vhi >= caller_ptr->p_memmap[S].mem_vir + 
+              vhi >= caller_ptr->p_memmap[S].mem_vir +
               caller_ptr->p_memmap[S].mem_len) {
 #if DEBUG_ENABLE_IPC_WARNINGS
           kprintf("sys_call: invalid message pointer, trap %d, caller %d\n",
@@ -163,7 +163,7 @@ long bit_map;			/* notification event set or flags */
   }
 
   /* If the call is to send to a process, i.e., for SEND, SENDREC or NOTIFY,
-   * verify that the caller is allowed to send to the given destination. 
+   * verify that the caller is allowed to send to the given destination.
    */
   if (function & CHECK_DST) {
       if (! get_sys_bit(priv(caller_ptr)->s_ipc_to, nr_to_id(src_dst))) {
@@ -192,19 +192,19 @@ long bit_map;			/* notification event set or flags */
    *   - SEND:    sender blocks until its message has been delivered
    *   - RECEIVE: receiver blocks until an acceptable message has arrived
    *   - NOTIFY:  nonblocking call; deliver notification or mark pending
-   *   - ECHO:    nonblocking call; directly echo back the message 
+   *   - ECHO:    nonblocking call; directly echo back the message
    */
   switch(function) {
   case SENDREC:
       /* A flag is set so that notifications cannot interrupt SENDREC. */
       caller_ptr->p_misc_flags |= REPLY_PENDING;
       /* fall through */
-  case SEND:			
+  case SEND:
       result = mini_send(caller_ptr, src_dst_e, m_ptr, flags);
-      if (function == SEND || result != OK) {	
+      if (function == SEND || result != OK) {
           break;				/* done, or SEND failed */
       }						/* fall through for SENDREC */
-  case RECEIVE:			
+  case RECEIVE:
       if (function == RECEIVE)
           caller_ptr->p_misc_flags &= ~REPLY_PENDING;
       result = mini_receive(caller_ptr, src_dst_e, m_ptr, flags);
@@ -225,18 +225,18 @@ long bit_map;			/* notification event set or flags */
 }
 
 /*===========================================================================*
- *				deadlock				     * 
+ *				deadlock				     *
  *===========================================================================*/
-PRIVATE int deadlock(function, cp, src_dst) 
+PRIVATE int deadlock(function, cp, src_dst)
 int function;					/* trap number */
 register struct proc *cp;			/* pointer to caller */
 int src_dst;					/* src or dst process */
 {
 /* Check for deadlock. This can happen if 'caller_ptr' and 'src_dst' have
- * a cyclic dependency of blocking send and receive calls. The only cyclic 
+ * a cyclic dependency of blocking send and receive calls. The only cyclic
  * depency that is not fatal is if the caller and target directly SEND(REC)
- * and RECEIVE to each other. If a deadlock is found, the group size is 
- * returned. Otherwise zero is returned. 
+ * and RECEIVE to each other. If a deadlock is found, the group size is
+ * returned. Otherwise zero is returned.
  */
   register struct proc *xp;			/* process pointer */
   int group_size = 1;				/* start with only caller */
@@ -247,7 +247,7 @@ int src_dst;					/* src or dst process */
       xp = proc_addr(src_dst);			/* follow chain of processes */
       group_size ++;				/* extra process in group */
 
-      /* Check whether the last process in the chain has a dependency. If it 
+      /* Check whether the last process in the chain has a dependency. If it
        * has not, the cycle cannot be closed and we are done.
        */
       if (xp->p_rts_flags & RECEIVING) {	/* xp has dependency */
@@ -259,14 +259,14 @@ int src_dst;					/* src or dst process */
 	  return(0);				/* not a deadlock */
       }
 
-      /* Now check if there is a cyclic dependency. For group sizes of two,  
+      /* Now check if there is a cyclic dependency. For group sizes of two,
        * a combination of SEND(REC) and RECEIVE is not fatal. Larger groups
-       * or other combinations indicate a deadlock.  
+       * or other combinations indicate a deadlock.
        */
       if (src_dst == proc_nr(cp)) {		/* possible deadlock */
 	  if (group_size == 2) {		/* caller and src_dst */
 	      /* The function number is magically converted to flags. */
-	      if ((xp->p_rts_flags ^ (function << 2)) & SENDING) { 
+	      if ((xp->p_rts_flags ^ (function << 2)) & SENDING) {
 	          return(0);			/* not a deadlock */
 	      }
 	  }
@@ -277,7 +277,7 @@ int src_dst;					/* src or dst process */
 }
 
 /*===========================================================================*
- *				mini_send				     * 
+ *				mini_send				     *
  *===========================================================================*/
 PRIVATE int mini_send(caller_ptr, dst_e, m_ptr, flags)
 register struct proc *caller_ptr;	/* who is trying to send a message? */
@@ -298,8 +298,8 @@ unsigned flags;				/* system call flags */
 
   if (dst_ptr->p_rts_flags & NO_ENDPOINT) return EDSTDIED;
 
-  /* Check if 'dst' is blocked waiting for this message. The destination's 
-   * SENDING flag may be set when its SENDREC call blocked while sending.  
+  /* Check if 'dst' is blocked waiting for this message. The destination's
+   * SENDING flag may be set when its SENDREC call blocked while sending.
    */
   if ( (dst_ptr->p_rts_flags & (RECEIVING | SENDING)) == RECEIVING &&
        (dst_ptr->p_getfrom_e == ANY
@@ -317,7 +317,7 @@ unsigned flags;				/* system call flags */
 
 	/* Process is now blocked.  Put in on the destination's queue. */
 	xpp = &dst_ptr->p_caller_q;		/* find end of list */
-	while (*xpp != NIL_PROC) xpp = &(*xpp)->p_q_link;	
+	while (*xpp != NIL_PROC) xpp = &(*xpp)->p_q_link;
 	*xpp = caller_ptr;			/* add caller to end */
 	caller_ptr->p_q_link = NIL_PROC;	/* mark new end of list */
   } else {
@@ -327,7 +327,7 @@ unsigned flags;				/* system call flags */
 }
 
 /*===========================================================================*
- *				mini_receive				     * 
+ *				mini_receive				     *
  *===========================================================================*/
 PRIVATE int mini_receive(caller_ptr, src_e, m_ptr, flags)
 register struct proc *caller_ptr;	/* process trying to get message */
@@ -337,7 +337,7 @@ unsigned flags;				/* system call flags */
 {
 /* A process or task wants to get a message.  If a message is already queued,
  * acquire it and deblock the sender.  If no message from the desired source
- * is available block the caller, unless the flags don't allow blocking.  
+ * is available block the caller, unless the flags don't allow blocking.
  */
   register struct proc **xpp;
   register struct notification **ntf_q_pp;
@@ -367,7 +367,7 @@ unsigned flags;				/* system call flags */
         map = &priv(caller_ptr)->s_notify_pending;
         for (chunk=&map->chunk[0]; chunk<&map->chunk[NR_SYS_CHUNKS]; chunk++) {
 
-            /* Find a pending notification from the requested source. */ 
+            /* Find a pending notification from the requested source. */
             if (! *chunk) continue; 			/* no bits in chunk */
             for (i=0; ! (*chunk & (1<<i)); ++i) {} 	/* look up the bit */
             src_id = (chunk - &map->chunk[0]) * BITCHUNK_BITS + i;
@@ -410,14 +410,14 @@ unsigned flags;				/* system call flags */
     }
   }
 
-  /* No suitable message is available or the caller couldn't send in SENDREC. 
+  /* No suitable message is available or the caller couldn't send in SENDREC.
    * Block the process trying to receive, unless the flags tell otherwise.
    */
   if ( ! (flags & NON_BLOCKING)) {
-      caller_ptr->p_getfrom_e = src_e;		
+      caller_ptr->p_getfrom_e = src_e;
       caller_ptr->p_messbuf = m_ptr;
       if (caller_ptr->p_rts_flags == 0) dequeue(caller_ptr);
-      caller_ptr->p_rts_flags |= RECEIVING;		
+      caller_ptr->p_rts_flags |= RECEIVING;
       return(OK);
   } else {
       return(ENOTREADY);
@@ -425,7 +425,7 @@ unsigned flags;				/* system call flags */
 }
 
 /*===========================================================================*
- *				mini_notify				     * 
+ *				mini_notify				     *
  *===========================================================================*/
 PRIVATE int mini_notify(caller_ptr, dst)
 register struct proc *caller_ptr;	/* sender of the notification */
@@ -435,32 +435,32 @@ int dst;				/* which process to notify */
   int src_id;				/* source id for late delivery */
   message m;				/* the notification message */
 
-  /* Check to see if target is blocked waiting for this message. A process 
+  /* Check to see if target is blocked waiting for this message. A process
    * can be both sending and receiving during a SENDREC system call.
    */
   if ((dst_ptr->p_rts_flags & (RECEIVING|SENDING)) == RECEIVING &&
       ! (dst_ptr->p_misc_flags & REPLY_PENDING) &&
-      (dst_ptr->p_getfrom_e == ANY || 
+      (dst_ptr->p_getfrom_e == ANY ||
       dst_ptr->p_getfrom_e == caller_ptr->p_endpoint)) {
 
-      /* Destination is indeed waiting for a message. Assemble a notification 
+      /* Destination is indeed waiting for a message. Assemble a notification
        * message and deliver it. Copy from pseudo-source HARDWARE, since the
        * message is in the kernel's address space.
-       */ 
+       */
       BuildMess(&m, proc_nr(caller_ptr), dst_ptr);
-      CopyMess(proc_nr(caller_ptr), proc_addr(HARDWARE), &m, 
+      CopyMess(proc_nr(caller_ptr), proc_addr(HARDWARE), &m,
           dst_ptr, dst_ptr->p_messbuf);
       dst_ptr->p_rts_flags &= ~RECEIVING;	/* deblock destination */
       if (dst_ptr->p_rts_flags == 0) enqueue(dst_ptr);
       return(OK);
-  } 
+  }
 
-  /* Destination is not ready to receive the notification. Add it to the 
-   * bit map with pending notifications. Note the indirectness: the system id 
+  /* Destination is not ready to receive the notification. Add it to the
+   * bit map with pending notifications. Note the indirectness: the system id
    * instead of the process number is used in the pending bit map.
-   */ 
+   */
   src_id = priv(caller_ptr)->s_id;
-  set_sys_bit(priv(dst_ptr)->s_notify_pending, src_id); 
+  set_sys_bit(priv(dst_ptr)->s_notify_pending, src_id);
   return(OK);
 }
 
@@ -472,10 +472,10 @@ int src_e;			/* (endpoint) sender of the notification */
 int dst_e;			/* (endpoint) who is to be notified */
 {
 /* Safe gateway to mini_notify() for tasks and interrupt handlers. The sender
- * is explicitely given to prevent confusion where the call comes from. MINIX 
- * kernel is not reentrant, which means to interrupts are disabled after 
+ * is explicitely given to prevent confusion where the call comes from. MINIX
+ * kernel is not reentrant, which means to interrupts are disabled after
  * the first kernel entry (hardware interrupt, trap, or exception). Locking
- * is done by temporarily disabling interrupts. 
+ * is done by temporarily disabling interrupts.
  */
   int result, src, dst;
 
@@ -484,26 +484,26 @@ int dst_e;			/* (endpoint) who is to be notified */
 
   /* Exception or interrupt occurred, thus already locked. */
   if (k_reenter >= 0) {
-      result = mini_notify(proc_addr(src), dst); 
+      result = mini_notify(proc_addr(src), dst);
   }
 
   /* Call from task level, locking is required. */
   else {
       lock(0, "notify");
-      result = mini_notify(proc_addr(src), dst); 
+      result = mini_notify(proc_addr(src), dst);
       unlock(0);
   }
   return(result);
 }
 
 /*===========================================================================*
- *				enqueue					     * 
+ *				enqueue					     *
  *===========================================================================*/
 PRIVATE void enqueue(rp)
 register struct proc *rp;	/* this process is now runnable */
 {
-/* Add 'rp' to one of the queues of runnable processes.  This function is 
- * responsible for inserting a process into one of the scheduling queues. 
+/* Add 'rp' to one of the queues of runnable processes.  This function is
+ * responsible for inserting a process into one of the scheduling queues.
  * The mechanism is implemented here.   The actual scheduling policy is
  * defined in sched() and pick_proc().
  */
@@ -522,19 +522,19 @@ register struct proc *rp;	/* this process is now runnable */
   if (rdy_head[q] == NIL_PROC) {		/* add to empty queue */
       rdy_head[q] = rdy_tail[q] = rp; 		/* create a new queue */
       rp->p_nextready = NIL_PROC;		/* mark new end */
-  } 
+  }
   else if (front) {				/* add to head of queue */
       rp->p_nextready = rdy_head[q];		/* chain head of queue */
       rdy_head[q] = rp;				/* set new queue head */
-  } 
+  }
   else {					/* add to tail of queue */
-      rdy_tail[q]->p_nextready = rp;		/* chain tail of queue */	
+      rdy_tail[q]->p_nextready = rp;		/* chain tail of queue */
       rdy_tail[q] = rp;				/* set new queue tail */
       rp->p_nextready = NIL_PROC;		/* mark new end */
   }
 
   /* Now select the next process to run. */
-  pick_proc();			
+  pick_proc();
 
 #if DEBUG_SCHED_CHECK
   rp->p_ready = 1;
@@ -543,7 +543,7 @@ register struct proc *rp;	/* this process is now runnable */
 }
 
 /*===========================================================================*
- *				dequeue					     * 
+ *				dequeue					     *
  *===========================================================================*/
 PRIVATE void dequeue(rp)
 register struct proc *rp;	/* this process is no longer runnable */
@@ -557,7 +557,7 @@ register struct proc *rp;	/* this process is no longer runnable */
   register struct proc *prev_xp;
 
   /* Side-effect for kernel: check if the task's stack still is ok? */
-  if (iskernelp(rp)) { 				
+  if (iskernelp(rp)) {
 	if (*priv(rp)->s_stack_guard != STACK_GUARD)
 		panic("stack overrun by task", proc_nr(rp));
   }
@@ -567,11 +567,11 @@ register struct proc *rp;	/* this process is no longer runnable */
   if (! rp->p_ready) kprintf("dequeue() already unready process\n");
 #endif
 
-  /* Now make sure that the process is not in its ready queue. Remove the 
-   * process if it is found. A process can be made unready even if it is not 
+  /* Now make sure that the process is not in its ready queue. Remove the
+   * process if it is found. A process can be made unready even if it is not
    * running by being sent a signal that kills it.
    */
-  prev_xp = NIL_PROC;				
+  prev_xp = NIL_PROC;
   for (xpp = &rdy_head[q]; *xpp != NIL_PROC; xpp = &(*xpp)->p_nextready) {
 
       if (*xpp == rp) {				/* found process to remove */
@@ -592,7 +592,7 @@ register struct proc *rp;	/* this process is no longer runnable */
 }
 
 /*===========================================================================*
- *				sched					     * 
+ *				sched					     *
  *===========================================================================*/
 PRIVATE void sched(rp, queue, front)
 register struct proc *rp;			/* process to be scheduled */
@@ -601,7 +601,7 @@ int *front;					/* return: front or back */
 {
 /* This function determines the scheduling policy.  It is called whenever a
  * process must be added to one of the scheduling queues to decide where to
- * insert it.  As a side-effect the process' priority may be updated.  
+ * insert it.  As a side-effect the process' priority may be updated.
  */
   int time_left;
   register struct proc *bq_proc = rdy_head[BATCH_Q];
@@ -616,43 +616,43 @@ int *front;					/* return: front or back */
 
     for (bq_proc = bq_proc->p_nextready; bq_proc != NIL_PROC; bq_proc = bq_proc->p_nextready) {
       if (bq_proc->p_ticks_left < min_tick_bq)
-        min_tick_bq = bq_proc->p_ticks_left;      
+        min_tick_bq = bq_proc->p_ticks_left;
     }
 
     time_left = (rp->p_ticks_left > min_tick_bq);
   }
 /* ######################################################## */
 
-  /* Check whether the process has time left. Otherwise give a new quantum 
-   * and lower the process' priority, unless the process already is in the 
-   * lowest queue.  
+  /* Check whether the process has time left. Otherwise give a new quantum
+   * and lower the process' priority, unless the process already is in the
+   * lowest queue.
    */
   if (! time_left) {				/* quantum consumed ? */
       rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
 
 /* ######################################################## */
-      if (rp->p_priority < (IDLE_Q-2)) {  	 
+      if (rp->p_priority < (IDLE_Q-2)) {
 /* ######################################################## */
 
           rp->p_priority += 1;			/* lower priority */
       }
   }
 
-  /* If there is time left, the process is added to the front of its queue, 
+  /* If there is time left, the process is added to the front of its queue,
    * so that it can immediately run. The queue to use simply is always the
-   * process' current priority. 
+   * process' current priority.
    */
   *queue = rp->p_priority;
   *front = time_left;
 }
 
 /*===========================================================================*
- *				pick_proc				     * 
+ *				pick_proc				     *
  *===========================================================================*/
 PRIVATE void pick_proc()
 {
 /* Decide who to run now.  A new process is selected by setting 'next_ptr'.
- * When a billable process is selected, record it in 'bill_ptr', so that the 
+ * When a billable process is selected, record it in 'bill_ptr', so that the
  * clock task can tell who to bill for system time.
  */
   register struct proc *rp;			/* process to run */
@@ -662,12 +662,12 @@ PRIVATE void pick_proc()
    * queues is defined in proc.h, and priorities are set in the task table.
    * The lowest queue contains IDLE, which is always ready.
    */
-  for (q=0; q < NR_SCHED_QUEUES; q++) {	
+  for (q=0; q < NR_SCHED_QUEUES; q++) {
       if ( (rp = rdy_head[q]) != NIL_PROC) {
           next_ptr = rp;			/* run process 'rp' next */
-          if (priv(rp)->s_flags & BILLABLE)	 	
+          if (priv(rp)->s_flags & BILLABLE)
               bill_ptr = rp;			/* bill for system time */
-          return;				 
+          return;
       }
   }
 }
@@ -680,7 +680,7 @@ PUBLIC void balance_queues(tp)
 timer_t *tp;					/* watchdog timer pointer */
 {
 /* Check entire process table and give all process a higher priority. This
- * effectively means giving a new quantum. If a process already is at its 
+ * effectively means giving a new quantum. If a process already is at its
  * maximum priority, its quantum will be renewed.
  */
   static timer_t queue_timer;			/* timer structure to use */
@@ -712,7 +712,7 @@ timer_t *tp;					/* watchdog timer pointer */
   kprintf("ticks_added: %d\n", ticks_added);
 #endif
 
-  /* Now schedule a new watchdog timer to balance the queues again.  The 
+  /* Now schedule a new watchdog timer to balance the queues again.  The
    * period depends on the total amount of quantum ticks added.
    */
   next_period = MAX(Q_BALANCE_TICKS, ticks_added);	/* calculate next */
@@ -754,7 +754,7 @@ struct proc *rp;		/* this process is no longer runnable */
 {
 /* Safe gateway to dequeue() for tasks. */
   if (k_reenter >= 0) {
-	/* We're in an exception or interrupt, so don't lock (and ... 
+	/* We're in an exception or interrupt, so don't lock (and ...
 	 * don't unlock).
 	 */
 	dequeue(rp);
@@ -787,7 +787,7 @@ int e, *p, fatalflag;
 	 * otherwise without. This allows us to print the where the
 	 * conversion was attempted, making the errors verbose without
 	 * adding code for that at every call.
-	 * 
+	 *
 	 * If fatalflag is nonzero, we must panic if the conversion doesn't
 	 * succeed.
 	 */
