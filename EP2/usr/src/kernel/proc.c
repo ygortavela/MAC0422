@@ -610,7 +610,6 @@ int *front;					/* return: front or back */
   time_left = (rp->p_ticks_left > 0);	/* quantum fully consumed */
 
 /* ######################################################## */
-
   if (rp->p_priority == BATCH_Q && bq_proc != NIL_PROC) {
     min_tick_bq = bq_proc->p_ticks_left;
 
@@ -631,7 +630,8 @@ int *front;					/* return: front or back */
       rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
 
 /* ######################################################## */
-      if (rp->p_priority < (IDLE_Q-2)) {
+  /* processes can't enter on IDLE_Q or BATCH_Q */
+      if ( rp->p_priority < (IDLE_Q-2)) {
 /* ######################################################## */
 
           rp->p_priority += 1;			/* lower priority */

@@ -68,8 +68,8 @@ _PROTOTYPE( ssize_t _read_pm, (int _fd, void *_buf, size_t _n, int s, int e));
 _PROTOTYPE( ssize_t _write_pm, (int _fd, void *_buf, size_t _n, int s, int e));
 
 /* ######################################################## */
-_PROTOTYPE( int do_batch, (pid_t proc_id)					);
-_PROTOTYPE( int do_unbatch, (pid_t proc_id)					);
+_PROTOTYPE( int do_batch, (void)					);
+_PROTOTYPE( int do_unbatch, (void)					);
 /* ######################################################## */
 
 #if (MACHINE == MACINTOSH)
@@ -100,7 +100,7 @@ _PROTOTYPE( int do_times, (void)					);
 _PROTOTYPE( int do_gettimeofday, (void)					);
 
 /* timers.c */
-_PROTOTYPE( void pm_set_timer, (timer_t *tp, int delta, 
+_PROTOTYPE( void pm_set_timer, (timer_t *tp, int delta,
 	tmr_func_t watchdog, int arg));
 _PROTOTYPE( void pm_expire_timers, (clock_t now));
 _PROTOTYPE( void pm_cancel_timer, (timer_t *tp));
