@@ -16,7 +16,7 @@ PUBLIC int do_setprior(message *m_ptr)
   rp = proc_addr(proc_nr);
 
   lock_dequeue(rp);
-  rp->p_priority = pri;
+  rp->p_max_priority = rp->p_priority = pri;
   if (! rp->p_rts_flags) lock_enqueue(rp);
 
   return(OK);

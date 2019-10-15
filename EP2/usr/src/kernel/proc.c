@@ -605,20 +605,26 @@ int *front;					/* return: front or back */
  */
   int time_left;
   register struct proc *bq_proc = rdy_head[BATCH_Q];
-  char min_tick_bq;
+  char min_ticks_left, min_quantum_size, check_cond_three = 1;
 
   time_left = (rp->p_ticks_left > 0);	/* quantum fully consumed */
 
 /* ######################################################## */
   if (rp->p_priority == BATCH_Q && bq_proc != NIL_PROC) {
-    min_tick_bq = bq_proc->p_ticks_left;
+    min_ticks_left = bq_proc->p_ticks_left;
+    min_quantum_size = bq_proc->p_quantum_size;
 
     for (bq_proc = bq_proc->p_nextready; bq_proc != NIL_PROC; bq_proc = bq_proc->p_nextready) {
-      if (bq_proc->p_ticks_left < min_tick_bq)
-        min_tick_bq = bq_proc->p_ticks_left;
+      if (bq_proc->p_ticks_left < min_ticks_left) {
+        check_cond_three = 0; /* condition 4.3 is not satisfied */
+        min_ticks_left = bq_proc->p_ticks_left;
+      }
+
+      if (bq_proc->p_quantum_size < min_quantum_size)
+        min_quantum_size = bq_proc->p_quantum_size;
     }
 
-    time_left = (rp->p_ticks_left > min_tick_bq);
+    time_left = (rp->p_ticks_left > min_ticks_left);
   }
 /* ######################################################## */
 
@@ -627,15 +633,17 @@ int *front;					/* return: front or back */
    * lowest queue.
    */
   if (! time_left) {				/* quantum consumed ? */
-      rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
+    rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
 
 /* ######################################################## */
+    if (rp->p_priority == BATCH_Q && !check_cond_three)
+      rp->p_ticks_left = min_quantum_size;
+
   /* processes can't enter on IDLE_Q or BATCH_Q */
-      if ( rp->p_priority < (IDLE_Q-2)) {
+    if ( rp->p_priority < (IDLE_Q-2)) {
 /* ######################################################## */
-
-          rp->p_priority += 1;			/* lower priority */
-      }
+      rp->p_priority += 1;			/* lower priority */
+    }
   }
 
   /* If there is time left, the process is added to the front of its queue,

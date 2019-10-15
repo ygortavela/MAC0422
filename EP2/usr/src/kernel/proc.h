@@ -89,7 +89,7 @@ struct proc {
 #define MAX_USER_Q  	   0    /* highest priority for user processes */
 #define USER_Q  	   7    /* default (should correspond to nice 0) */
 
-#define MIN_USER_Q	  15	/* minimum priority for user processes */
+#define MIN_USER_Q	  14	/* minimum priority for user processes */
 
 /* ######################################################## */
 #define BATCH_Q       15
