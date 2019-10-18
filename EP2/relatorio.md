@@ -37,5 +37,13 @@ Para fazer o **item 2** e **3**, ou seja, implementar as chamadas de sistema *ba
   2. Envia **m** para o *system task* (**SYSTASK**), indicando qual rotina (**SYS_SETPRIOR**) a ser chamada: ***_taskcall(SYSTASK, SYS_SETPRIOR, &m)***. Sendo a macro  **SYS_SETPRIOR** definida em *src/include/minix/com.h* e, mapeada em *src/kernel/system.c*;
   3. Chama a rotina **do_setprior** (*src/kernel/system/do_setprior.c*). Ela extrai os parâmetros da mensagem **m**, o número do processo (**proc_nr**) e sua prioriade (**pri**). Com o número do processo recuperamos um apontador para processo (**rp**) atráves da rotina **proc_addr**. Finalmente, chamados a função **lock_dequeue**, a qual tira o processo da fila, bloqueando ele, e atualizamos a prioriade do processo, no caso, para **prio**. Assim, chamamos a função **lock_enqueue**, a qual coloca o o processo na fila correspondente à **prio**.
 
-
 ## 4. **Mudanças na política de scheduling**
+
+1. "Nenhum processo em BATCH_Q muda de fila"
+   - Para garantir essa condição, tivemos que modificar a rotina **balance_queues**. Na linha **707**, na qual é verificado a necessidade de atualizar a prioridade de um processo, adicionamos mais uma condição lógica para não permitir que os processos com prioridade igual a **BATCH_Q** seja atualizado;
+   - Além de nenhum processo poder sair da **BATCH_Q**, nós garantimos que nenhum processo pode entrar na mesma.  Para isso,  na linha **645** da rotina **sched**, diminuimos a prioridade máxima que um processo pode ter (**IDLE_Q - 2**). 
+
+2. "Um processo novo em BATCH_Q deve rodar até que o seu total de tiques
+   seja o mesmo do processo com menor número de tiques na fila"
+   - Dentro da rotina **sched** , caso o  processo a ser escalonado tem prioriade BACTH_Q, percorremos essa queue para encontrar o menor valor de tiques restantes dentre os processos. Assim, se o processo a ser escalonado tem seu número de tiques restantes maior que o menor calculado, esse processo não pode ser posto no final da fila, 
+
