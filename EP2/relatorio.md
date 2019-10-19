@@ -39,11 +39,13 @@ Para fazer o **item 2** e **3**, ou seja, implementar as chamadas de sistema *ba
 
 ## 4. **Mudanças na política de scheduling**
 
+A seguir, introduzimos as mudanças realizadas para cada item pedido. Todas as mudanças foram feitas no arquivo **proc.c**.
+
 1. "Nenhum processo em BATCH_Q muda de fila"
-   - Para garantir essa condição, tivemos que modificar a rotina **balance_queues**. Na linha **707**, na qual é verificado a necessidade de atualizar a prioridade de um processo, adicionamos mais uma condição lógica para não permitir que os processos com prioridade igual a **BATCH_Q** seja atualizado;
-   - Além de nenhum processo poder sair da **BATCH_Q**, nós garantimos que nenhum processo pode entrar na mesma.  Para isso,  na linha **645** da rotina **sched**, diminuimos a prioridade máxima que um processo pode ter (**IDLE_Q - 2**). 
-
-2. "Um processo novo em BATCH_Q deve rodar até que o seu total de tiques
-   seja o mesmo do processo com menor número de tiques na fila"
-   - Dentro da rotina **sched** , caso o  processo a ser escalonado tem prioriade BACTH_Q, percorremos essa queue para encontrar o menor valor de tiques restantes dentre os processos. Assim, se o processo a ser escalonado tem seu número de tiques restantes maior que o menor calculado, esse processo não pode ser posto no final da fila, 
-
+   - Para garantir essa condição, tivemos que modificar a rotina **balance_queues**. Na linha *707*, na qual é verificado a necessidade de atualizar a prioridade de um processo, adicionamos mais uma condição lógica para não permitir que os processos com prioridade igual a *BATCH_Q* seja atualizado;
+   - Além de nenhum processo poder sair da *BATCH_Q*, nós garantimos que nenhum processo pode entrar na mesma.  Para isso,  na linha *645* da rotina **sched**, diminuimos a prioridade máxima que um processo pode ter, ou seja, *IDLE_Q - 2*. 
+2. "Um processo novo em BATCH_Q deve rodar até que o seu total de tiques seja o mesmo do processo com menor número de tiques na fila"
+   - Dentro da rotina **sched**, caso o processo a ser escalonado tenha prioriade equivalente a *BATCH_Q*, percorremos a fila de prioridade para encontrar o menor valor de *p_ticks_left* dentre os processos, atribuindo à *min_ticks_left* este valor. Desta forma, se o processo a ser escalonado tem seu número de *p_ticks_left* menor que o *min_ticks_left* calculado, esse processo é colocado no final da fila, caso contrário, ele se manterá na frente da fila mantendo a sua execução. Esse procedimento pode ser verificado entre as linhas *613* à *628*, além de, decidir a posição do processo na fila em conjunto com a política estabelecida do item **4.3** na linha *656*.
+   
+3. "Quando todos processos de BATCH_Q tiverem o mesmo número de tiques, os processos são escalonados em round robin"
+   - À partir de uma variável booleana, *check_cond_three*, verificamos na linha *618*

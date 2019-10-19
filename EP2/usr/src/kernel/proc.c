@@ -632,7 +632,7 @@ int *front;					/* return: front or back */
    * and lower the process' priority, unless the process already is in the 
    * lowest queue.  
    */
-  if (! time_left) {				/* quantum consumed ? */
+  if (!time_left) {				/* quantum consumed ? */
     rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
 
 /* ######################################################## */
@@ -653,7 +653,7 @@ int *front;					/* return: front or back */
   *queue = rp->p_priority;
 
 /* ######################################################## */
-  *front = (rp->p_priority == BATCH_Q) ? check_cond_three : time_left;
+  *front = (rp->p_priority == BATCH_Q && time_left) ? check_cond_three : time_left;
 /* ######################################################## */
 }
 
