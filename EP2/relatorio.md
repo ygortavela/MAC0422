@@ -12,9 +12,9 @@
 
 ------
 
-A macro **BATCH_Q** foi adicionada entre o **IDLE** e as filas de usuário. Para isso, aumentamos o número de filas (**NR_SCHED_QUEUES**) para **17** e o **IDLE** foi definido como **16**, **BATCH_Q** corresponde à fila **15**. Essa mudança foi realizada em */kernel/proc.h* .
+A macro *BATCH_Q* foi adicionada entre o *IDLE* e as filas de usuário. Para isso, aumentamos o número de filas (*NR_SCHED_QUEUES*) para **17**, assim a fila *IDLE* foi definida como **16** e a fila *BATCH_Q* corresponde à fila **15**. Essa mudança foi realizada em *usr/src/kernel/proc.h* .
 
-## 2/3. ***System calls batch* e *unbatch***
+## 2 && 3. ***System calls batch* e *unbatch***
 
 ------
 
@@ -45,7 +45,10 @@ A seguir, introduzimos as mudanças realizadas para cada item pedido. Todas as m
    - Para garantir essa condição, tivemos que modificar a rotina **balance_queues**. Na linha *707*, na qual é verificado a necessidade de atualizar a prioridade de um processo, adicionamos mais uma condição lógica para não permitir que os processos com prioridade igual a *BATCH_Q* seja atualizado;
    - Além de nenhum processo poder sair da *BATCH_Q*, nós garantimos que nenhum processo pode entrar na mesma.  Para isso,  na linha *645* da rotina **sched**, diminuimos a prioridade máxima que um processo pode ter, ou seja, *IDLE_Q - 2*. 
 2. "Um processo novo em BATCH_Q deve rodar até que o seu total de tiques seja o mesmo do processo com menor número de tiques na fila"
-   - Dentro da rotina **sched**, caso o processo a ser escalonado tenha prioriade equivalente a *BATCH_Q*, percorremos a fila de prioridade para encontrar o menor valor de *p_ticks_left* dentre os processos, atribuindo à *min_ticks_left* este valor. Desta forma, se o processo a ser escalonado tem seu número de *p_ticks_left* menor que o *min_ticks_left* calculado, esse processo é colocado no final da fila, caso contrário, ele se manterá na frente da fila mantendo a sua execução. Esse procedimento pode ser verificado entre as linhas *613* à *628*, além de, decidir a posição do processo na fila em conjunto com a política estabelecida do item **4.3** na linha *656*.
-   
+   - Dentro da rotina **sched**, caso o processo a ser escalonado tenha prioriade equivalente a *BATCH_Q*, percorremos a fila de prioridade para encontrar o menor valor de *p_ticks_left* dentre os processos, atribuindo à *min_ticks_left* este valor. Desta forma, se o processo a ser escalonado tem seu número de *p_ticks_left* menor que o *min_ticks_left* calculado, esse processo é colocado no final da fila, caso contrário, ele se manterá na frente da fila mantendo a sua execução. Tal procedimento pode ser verificado entre as linhas *613* à *628*, onde a linha *656* é responsável por manter ou alterar a posição na fila de prioridade da BATCH_Q.
 3. "Quando todos processos de BATCH_Q tiverem o mesmo número de tiques, os processos são escalonados em round robin"
-   - À partir de uma variável booleana, *check_cond_three*, verificamos na linha *618*
+   - Criamos uma variável booleana *check_cond_three* em **sched**, que inicialmente é verdadeira, dentro do *for* utilizado no item **4.2** para percorrer a fila *BATCH_Q*. Verificamos se um processo possui sua quantidade de *p_ticks_left* menor que o menor valor de ticks *min_ticks_left*, ou seja, caso seja verdade tal afirmação então os processos da fila não se encontram em uma situação tal que todos eles possuem o mesmo número de tiques, logo na linha *619*, o estado da variável *check_cond_three* é alterado para falso. Além disso, no mesmo *for* realizamos a busca pelo processo que possuí o menor *p_quantum_size*, sendo tal informação armazenada em *min_quantum_size*.
+   - Caso a condição do item **4.2** seja verificada, ou seja, o processo a ser escalonado tenha uma quantidade de ticks igual a do processo com menor número de ticks na fila, então, tratamos o processo como um processo sem *time_left* (todo o quantum foi consumido). Assim, nas linhas *639* e *640*, caso a flag *check_cond_three* seja verdadeira atribuimos um novo quantum ao processo que é igual ao valor mínimo de quantum dado pela variável *min_quantum_size*.
+   - Por fim, caso o processo da fila *BATCH_Q* tenha "esgotado" o seu quantum (*time_left*), a posição que ele irá assumir na fila será dada pela flag *check_cond_three* na linha *656*.
+4. "Processos nesta fila só rodam quando a máquina está ociosa."
+   - Da forma que escolhemos implementar a fila *BATCH_Q* no item **1**, ou seja, atribuindo ela a posição entre a fila *IDLE* e as filas de usuário. Por padrão a função **pick_proc**, irá escolher um processo da fila *BATCH_Q* apenas se não houver processos em filas de prioridade maior que ela. Desta forma, um processo nesta fila só irá rodar quando, teoricamente, não houver mais nenhum processo além do *IDLE*.
