@@ -19,6 +19,9 @@ PUBLIC int do_setprior(message *m_ptr)
   rp->p_max_priority = rp->p_priority = pri;
   if (! rp->p_rts_flags) lock_enqueue(rp);
 
+  batch_q_flag[proc_nr] = 0;
+  if (pri == BATCH_Q) batch_q_flag[proc_nr] = 1;
+
   return(OK);
 }
 /* ######################################################## */
