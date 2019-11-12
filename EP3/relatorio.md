@@ -31,5 +31,7 @@ Abaixo descrevemos a implementação da chamada de sistema ***memalloc***, cuja 
 
 Em */usr/local/src* encontra-se o código fonte do programa **memorymap**, o qual é responsável por exibir na saída padrão um "mapa" da memória. Sua implementação é específicada abaixo:
 
-- Utilizamos a *system call* ***getsysinfo*** para obter uma cópia da tabela de processos *mproc*, assim iteramos um total de **NR_PROCS** processos da tabela e, caso o processo esteja ativo, printamos em uma linha seu **pid**, início do segmento de memória do **Text** como posição inicial e, posição final, sendo a soma do inicio do segmento de memória **Stack** com o seu tamanho total. Vale destacar que utilizamos o endereço de memória físico dos segmentos de memória do processo. 
+- Utilizamos a *system call* ***getsysinfo*** para obter uma cópia da tabela de processos *mproc*, assim iteramos um total de **NR_PROCS** processos da tabela e, caso o processo esteja ativo, printamos em uma linha seu **pid**, início do segmento de memória do **Text** como posição inicial e, posição final, sendo a soma do inicio do segmento de memória **Stack** com o seu tamanho total. Vale destacar que utilizamos o endereço de memória físico dos segmentos de memória do processo e os endereços são imprimidos em hexadecimal. 
 - Novamente, para imprimir a quantidade total de memória livre, utilizamos a *syscall* ***getsysinfo*** para obter uma cópia da struct *pm_mem_info*. Essa struct contém uma lista dos segmentos de memória livre, a qual percorremos e somamos cada tamanho de segmento para obter o total, que é medido em *phys_clicks*.
+
+**Observação**: o executável do programa *memorymap.c* foi inserido na pasta */src/local/bin*, assim basta usar o comando *memorymap* para executar o programa.

@@ -23,6 +23,7 @@
 #include <minix/config.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "mproc.h"
 #include "../../kernel/const.h"
@@ -97,7 +98,7 @@ phys_clicks clicks;		/* amount of memory requested */
       }
 
 /* ######################################################## */
-      if (max_ptr->h_len > hp->h_len) {
+      if (alloc_type == WORST_FIT && max_ptr->h_len > hp->h_len) {
         max_ptr = hp;
         prev_max_ptr = prev_ptr;
       }
@@ -106,13 +107,15 @@ phys_clicks clicks;		/* amount of memory requested */
       hp = hp->h_next;
     }
 
-    if (alloc_type == WORST_FIT) {
+    if (alloc_type == WORST_FIT && hp->h_len >= clicks) {
       old_base = max_ptr->h_base;
+      max_ptr->h_base += clicks;
+      max_ptr->h_len -= clicks;
 
       if(max_ptr->h_base > high_watermark)
         high_watermark = max_ptr->h_base;
 
-      del_slot(prev_max_ptr, max_ptr);
+      if (max_ptr->h_len == 0) del_slot(prev_max_ptr, max_ptr);
 
       return(old_base);
     }
@@ -136,7 +139,7 @@ phys_clicks clicks;		/* number of clicks to free */
   register struct hole *hp, *new_ptr, *prev_ptr;
 
   if (clicks == 0) return;
-  if ( (new_ptr = free_slots) == NIL_HOLE) 
+  if ( (new_ptr = free_slots) == NIL_HOLE)
   	panic(__FILE__,"hole table full", NO_NUM);
   new_ptr->h_base = base;
   new_ptr->h_len = clicks;
@@ -175,7 +178,7 @@ PRIVATE void del_slot(prev_ptr, hp)
 /* pointer to hole entry just ahead of 'hp' */
 register struct hole *prev_ptr;
 /* pointer to hole entry to be removed */
-register struct hole *hp;	
+register struct hole *hp;
 {
 /* Remove an entry from the hole list.  This procedure is called when a
  * request to allocate memory removes a hole in its entirety, thus reducing
@@ -261,7 +264,7 @@ phys_clicks *free;		/* memory size summaries */
 		free_mem(chunks[i].base, chunks[i].size);
 		*free += chunks[i].size;
 #if ENABLE_SWAP
-		if (swap_base < chunks[i].base + chunks[i].size) 
+		if (swap_base < chunks[i].base + chunks[i].size)
 			swap_base = chunks[i].base + chunks[i].size;
 #endif
 	}
@@ -357,7 +360,7 @@ register struct mproc *rmp;		/* process to add to the queue */
 
   if (rmp->mp_flags & SWAPIN) return;	/* already queued */
 
-  
+
   for (pmp = &in_queue; *pmp != NULL; pmp = &(*pmp)->mp_swapq) {}
   *pmp = rmp;
   rmp->mp_swapq = NULL;
@@ -395,7 +398,7 @@ PUBLIC void swap_in()
 		/* We've found memory.  Update map and swap in. */
 		old_base = rmp->mp_seg[D].mem_phys;
 		rmp->mp_seg[D].mem_phys = new_base;
-		rmp->mp_seg[S].mem_phys = rmp->mp_seg[D].mem_phys + 
+		rmp->mp_seg[S].mem_phys = rmp->mp_seg[D].mem_phys +
 			(rmp->mp_seg[S].mem_vir - rmp->mp_seg[D].mem_vir);
 		sys_newmap(rmp->mp_endpoint, rmp->mp_seg);
 		off = swap_offset + ((off_t) (old_base-swap_base)<<CLICK_SHIFT);
@@ -453,7 +456,7 @@ PRIVATE int swap_out()
 	rw_seg(1, swap_fd, rmp->mp_endpoint, D, (phys_bytes)size << CLICK_SHIFT);
 	old_base = rmp->mp_seg[D].mem_phys;
 	rmp->mp_seg[D].mem_phys = new_base;
-	rmp->mp_seg[S].mem_phys = rmp->mp_seg[D].mem_phys + 
+	rmp->mp_seg[S].mem_phys = rmp->mp_seg[D].mem_phys +
 		(rmp->mp_seg[S].mem_vir - rmp->mp_seg[D].mem_vir);
 	sys_newmap(rmp->mp_endpoint, rmp->mp_seg);
 	free_mem(old_base, size);
@@ -465,4 +468,25 @@ PRIVATE int swap_out()
 
   return(FALSE);	/* no candidate found */
 }
+
+/* ######################################################## */
+
+/*===========================================================================*
+ *         do_memalloc             *
+ *===========================================================================*/
+PUBLIC int do_memalloc()
+{
+  int type;
+  uid_t caller_uid;
+
+  type = m_in.m1_i1;
+  caller_uid = m_in.m1_i2;
+
+  if (caller_uid == SUPER_USER) alloc_type = type;
+
+  return(OK);
+}
+
+/* ######################################################## */
+
 #endif /* SWAP */
