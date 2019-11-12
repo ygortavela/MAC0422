@@ -19,7 +19,7 @@ Abaixo descrevemos a implementação da chamada de sistema ***memalloc***, cuja 
 - Rotina:
    1. Em *src/lib/posix/_memalloc.c* (protótipo no header *unistd.h*) é criado uma nova *message* **m**, contendo o **type** da política de alocação de memória e o **EUID** do processo de quem chamou a *syscall*;
    2. Envia **m** ao *process manager* (**MM**), indicando a rotina **MEMALLOC** deve ser executada usando ***_syscall(MM, MEMALLOC, &m)***. Sendo a macro **MEMALLOC** definida em *src/include/minix/callnr.h* e, mapeada na tabela de rotinas do *process manager* em *src/server/pm/table.c*, com rotina correspondente a **do_memalloc**;
-   3. Chama a rotina **do_memalloc** (*/usr/src/servers/pm/alloc.c*) que extrai os parâmetros de **m** e, verifica se o processo que a chamou é o user **root**. Se for o caso, é alterado o valor da variável local **alloc_type** para o **type** recebido pela *message*, alterando o comportamento da função *alloc_mem* descrito abaixo.
+   3. Chama a rotina **do_memalloc** (*/usr/src/servers/pm/alloc.c*) que extrai os parâmetros de **m** e, verifica se o processo que a chamou é o *effective user* **root**. Se for o caso, é alterado o valor da variável local **alloc_type** para o **type** recebido pela *message*, alterando o comportamento da função *alloc_mem* descrito abaixo.
    
 - Função *alloc_mem* (*/usr/src/servers/pm/alloc.c*):
 
@@ -28,3 +28,8 @@ Abaixo descrevemos a implementação da chamada de sistema ***memalloc***, cuja 
 
 
 ## 2. **Mapa da memória**
+
+Em */usr/local/src* encontra-se o código fonte do programa **memorymap**, o qual é responsável por exibir na saída padrão um "mapa" da memória. Sua implementação é específicada abaixo:
+
+- Utilizamos a *system call* ***getsysinfo*** para obter uma cópia da tabela de processos *mproc*, assim iteramos um total de **NR_PROCS** processos da tabela e, caso o processo esteja ativo, printamos em uma linha seu **pid**, início do segmento de memória do **Text** como posição inicial e, posição final, sendo a soma do inicio do segmento de memória **Stack** com o seu tamanho total. Vale destacar que utilizamos o endereço de memória físico dos segmentos de memória do processo. 
+- Novamente, para imprimir a quantidade total de memória livre, utilizamos a *syscall* ***getsysinfo*** para obter uma cópia da struct *pm_mem_info* que contém 
