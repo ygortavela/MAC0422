@@ -39,4 +39,4 @@ Em */usr/local/src* encontra-se o código fonte do programa **memorymap**, o qua
 ## Observações
 
 - O executável do programa *memorymap.c* foi inserido na pasta */src/local/bin*, assim basta usar o comando *memorymap* para executar o programa.
-- Como dito por um dos monitores no paca, optamos por utilizar uma imagem limpa do minix para realizar o EP, ao contrário do que é proposto no enunciando de "reciclar" a imagem do sistema dos EP's anteriores. 
+- Como foi dito por um dos monitores no Paca que não havia problema em utilizar uma nova imagem para o minix, optamos por esse caminho para realizar este EP, ao contrário do que é proposto no enunciando de "reciclar" a imagem do sistema dos EP's anteriores. 
