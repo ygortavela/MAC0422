@@ -22,8 +22,11 @@ main( int argc, char *argv[])
     if (mp[i].mp_pid != 0 || i == PM_PROC_NR)
       printf("%d\t0x%x\t\t0x%x\n", mp[i].mp_pid, mp[i].mp_seg[T].mem_phys, mp[i].mp_seg[S].mem_phys + mp[i].mp_seg[S].mem_len);
   }
+  
+  mem_free = 0;
 
-  for (i = 0, mem_free = 0; i < _NR_HOLES; i++, mem_free += pmi.pmi_holes[i].h_len);
+  for (i = 0; i < _NR_HOLES; i++)
+    if (pmi.pmi_holes[i].h_base) mem_free += pmi.pmi_holes[i].h_len;
 
   printf("Free memory (clicks): %d\n", mem_free);
 
