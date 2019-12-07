@@ -100,7 +100,8 @@ PRIVATE int common_open(register int oflags, mode_t omode)
   	/* Create a new inode by calling new_node(). */
 
 /* ######################################################## */
-      omode = temp ? I_TEMPORARY | (omode & ALL_MODES & fp->fp_umask) : I_REGULAR | (omode & ALL_MODES & fp->fp_umask);
+      omode = temp ? I_TEMPORARY : I_REGULAR;
+      omode |= (omode & ALL_MODES & fp->fp_umask);
 /* ######################################################## */
 
     	rip = new_node(&ldirp, user_path, omode, NO_ZONE, oflags&O_EXCL, NULL);
@@ -514,14 +515,12 @@ PUBLIC int do_slink()
 
   register int r;              /* error code */
   char string[NAME_MAX];       /* last component of the new dir's path name */
-/* ######################################################## */
-  struct inode *rip;           /* inode containing from name1 path */
-/* ######################################################## */
   struct inode *sip;           /* inode containing symbolic link */
   struct buf *bp;              /* disk buffer for link */
   struct inode *ldirp;         /* directory containing link */
-
 /* ######################################################## */
+  struct inode *rip;           /* inode containing from name1 path */
+
   if ((rip = eat_path(m_in.name1)) == NIL_INODE) return(err_code);
 
   if ((rip->i_mode & I_TYPE) == I_TEMPORARY) {
@@ -584,8 +583,8 @@ PUBLIC int do_slink()
 }
 
 /*===========================================================================*
- *  *       open_tmp             *
- *   *===========================================================================*/
+ *                              open_tmp                                     *
+ *===========================================================================*/
 PUBLIC int do_open_tmp()
 {
   int create_mode = 0;
